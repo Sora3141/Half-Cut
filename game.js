@@ -4,6 +4,7 @@ const resultDisplay = document.getElementById('result');
 const appContainer = document.getElementById('appContainer');
 const judgmentOverlay = document.getElementById('judgmentOverlay');
 
+
 let polygon = [];
 let holePolygon = [];
 let isDrawing = false;
