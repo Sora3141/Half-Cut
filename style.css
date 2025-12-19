@@ -4,6 +4,7 @@
     --accent-cyan: #00f2ff;
     --accent-magenta: #ff00ff;
 }
+
 body {
     margin: 0;
     font-family: 'Share Tech Mono', monospace;
@@ -14,34 +15,38 @@ body {
     align-items: center;
     height: 100vh;
     overflow: hidden;
-    touch-action: none;
+    touch-action: none; /* スマホのデフォルト挙動を抑制 */
 }
 
-/* 難易度セレクター */
+/* 難易度セレクター：称号より上に配置 */
 .difficulty-selector {
     display: flex;
     justify-content: center;
     gap: 10px;
     margin-bottom: 15px;
+    position: relative;
+    z-index: 50; 
 }
 .diff-btn {
-    padding: 6px 15px !important;
-    font-size: 0.7rem !important;
+    padding: 8px 16px !important;
+    font-size: 0.8rem !important;
     opacity: 0.5;
-    background: transparent;
+    background: rgba(0, 0, 0, 0.6);
     border: 1px solid var(--accent-cyan) !important;
     color: var(--accent-cyan);
     cursor: pointer;
     font-family: 'Orbitron';
-    transition: 0.3s;
+    transition: 0.2s;
+    touch-action: manipulation;
 }
 .diff-btn.active {
     opacity: 1;
     background: rgba(0, 242, 255, 0.2);
     box-shadow: 0 0 10px var(--accent-cyan);
+    border-color: #fff !important;
 }
 
-/* 称号表示（消えない設定） */
+/* 称号表示：操作を邪魔しないように pointer-events: none */
 .judgment-overlay {
     position: absolute;
     top: 50%; left: 50%;
@@ -49,7 +54,8 @@ body {
     font-family: 'Orbitron', sans-serif;
     font-size: 3.5rem;
     font-weight: 900;
-    pointer-events: none;
+    pointer-events: none !important; 
+    user-select: none;
     z-index: 10;
     opacity: 0;
     white-space: nowrap;
@@ -67,7 +73,7 @@ body {
 @keyframes shake-sharp { 0% { transform: translate(0,0); } 25% { transform: translate(5px, 5px); } 50% { transform: translate(-5px, -5px); } 100% { transform: translate(0,0); } }
 .shake-sharp { animation: shake-sharp 0.15s ease-in-out; }
 
-.app-container { text-align: center; width: 95%; max-width: 600px; }
+.app-container { text-align: center; width: 95%; max-width: 600px; z-index: 5; }
 header h1 { font-family: 'Orbitron'; font-size: clamp(2.5rem, 10vw, 4rem); margin: 0; letter-spacing: 8px; text-shadow: 0 0 10px var(--accent-cyan); }
 .subtitle { color: var(--accent-magenta); font-size: 0.7rem; margin-bottom: 10px; opacity: 0.7; }
 
@@ -76,12 +82,11 @@ canvas { width: 100% !important; height: auto !important; background-color: #000
 .canvas-header, .canvas-footer { font-size: 0.6rem; padding: 5px 10px; background: rgba(0, 242, 255, 0.1); text-align: left; }
 
 #result { height: 90px; margin-bottom: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-button#resetBtn { background-color: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 12px 30px; font-family: 'Orbitron'; cursor: pointer; }
-button#helpBtn { position: absolute; top: 20px; right: 20px; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--accent-cyan); color: var(--accent-cyan); background: transparent; cursor: pointer; }
+button#resetBtn { background-color: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 12px 30px; font-family: 'Orbitron'; cursor: pointer; z-index: 50; position: relative; }
+button#helpBtn { position: absolute; top: 20px; right: 20px; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--accent-cyan); color: var(--accent-cyan); background: transparent; cursor: pointer; z-index: 100; }
 
 .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(8px); }
 .modal-content { background: #121214; border: 2px solid var(--accent-cyan); padding: 25px; width: 85%; max-width: 400px; border-radius: 10px; }
 .highlight { color: var(--accent-cyan) !important; font-weight: bold; }
-
 .scanline { width: 100%; height: 100px; position: absolute; bottom: 100%; background: linear-gradient(0deg, transparent, rgba(0, 242, 255, 0.05), transparent); animation: scanline 8s linear infinite; pointer-events: none; }
 @keyframes scanline { 0% { bottom: 100%; } 100% { bottom: -100px; } }

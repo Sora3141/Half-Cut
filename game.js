@@ -4,7 +4,6 @@ const resultDisplay = document.getElementById('result');
 const appContainer = document.getElementById('appContainer');
 const judgmentOverlay = document.getElementById('judgmentOverlay');
 
-
 let polygon = [];
 let holePolygon = [];
 let isDrawing = false;
@@ -13,11 +12,19 @@ let startPoint = null;
 let endPoint = null;
 let currentDifficulty = 1;
 
+// 難易度変更：スマホ対応強化
 function setDifficulty(lv) {
-    currentDifficulty = lv;
+    currentDifficulty = parseInt(lv);
+    
+    // UIの更新
     document.querySelectorAll('.diff-btn').forEach((btn, i) => {
-        btn.classList.toggle('active', i + 1 === lv);
+        if (i + 1 === currentDifficulty) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
     });
+
     initGame();
 }
 
@@ -32,10 +39,11 @@ function initGame() {
         vertices = Math.floor(Math.random() * 5) + 8;
         minR = 0.3; maxR = 1.2;
     } else {
+        // LV.3 穴あき図形
         vertices = Math.floor(Math.random() * 6) + 10;
         minR = 0.4; maxR = 1.1;
-        const hx = 300 + (Math.random() - 0.5) * 40;
-        const hy = 200 + (Math.random() - 0.5) * 40;
+        const hx = 300 + (Math.random() - 0.5) * 50;
+        const hy = 200 + (Math.random() - 0.5) * 50;
         holePolygon = generateRandomPolygon(hx, hy, 40, 6, 0.5, 0.8);
     }
 
@@ -82,8 +90,9 @@ function calculateSplit() {
     }
 
     let countCyan = 0; let totalSamples = 0;
-    for (let x = 0; x < canvas.width; x += 4) {
-        for (let y = 0; y < canvas.height; y += 4) {
+    // スマホ負荷を考えステップ幅を微調整(5)
+    for (let x = 0; x < canvas.width; x += 5) {
+        for (let y = 0; y < canvas.height; y += 5) {
             if (isInsideTarget({x, y})) {
                 totalSamples++;
                 const val = (endPoint.y - startPoint.y) * (x - startPoint.x) - (endPoint.x - startPoint.x) * (y - startPoint.y);
@@ -133,7 +142,6 @@ function calculateSplit() {
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    // 背景グリッド
     ctx.fillStyle = "rgba(0, 242, 255, 0.05)";
     for(let x=0; x<canvas.width; x+=20) for(let y=0; y<canvas.height; y+=20) ctx.fillRect(x, y, 1, 1);
 
@@ -148,7 +156,6 @@ function draw() {
     }
 
     if (isEvaluated && startPoint && endPoint) {
-        // 判定後の塗り分け
         ctx.fillStyle = "rgba(255, 0, 255, 0.25)";
         ctx.fill(mainPath, "evenodd");
         ctx.save(); ctx.clip(mainPath, "evenodd");
@@ -157,12 +164,10 @@ function draw() {
         ctx.fillStyle = "rgba(0, 242, 255, 0.35)";
         ctx.fillRect(-3000, -3000, 6000, 3000); ctx.restore();
     } else {
-        // カット前の図形実体化（ここを少し明るくして穴と区別）
         ctx.fillStyle = "rgba(0, 242, 255, 0.12)";
         ctx.fill(mainPath, "evenodd");
     }
 
-    // 外枠
     ctx.strokeStyle = "rgba(0, 242, 255, 0.8)"; 
     ctx.lineWidth = 2; ctx.stroke(mainPath);
 
@@ -176,8 +181,8 @@ function draw() {
 
 function getCanvasPoint(e) {
     const rect = canvas.getBoundingClientRect();
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    const clientX = (e.touches && e.touches.length > 0) ? e.touches[0].clientX : e.clientX;
+    const clientY = (e.touches && e.touches.length > 0) ? e.touches[0].clientY : e.clientY;
     const scaleX = canvas.width / rect.width;
     const scaleY = canvas.height / rect.height;
     return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
@@ -197,19 +202,24 @@ function toggleHelp() {
 }
 
 function handleStart(e) { 
-    if(e.cancelable) e.preventDefault(); resetLineState(); 
-    judgmentOverlay.classList.remove('pop-animation'); judgmentOverlay.style.opacity = "0";
-    appContainer.classList.remove('shake-heavy', 'shake-sharp');
-    startPoint = getCanvasPoint(e); endPoint = startPoint; isDrawing = true; draw(); 
+    if(e.target === canvas) {
+        if(e.cancelable) e.preventDefault(); 
+        resetLineState(); 
+        judgmentOverlay.classList.remove('pop-animation'); judgmentOverlay.style.opacity = "0";
+        appContainer.classList.remove('shake-heavy', 'shake-sharp');
+        startPoint = getCanvasPoint(e); endPoint = startPoint; isDrawing = true; draw(); 
+    }
 }
 function handleMove(e) { if(!isDrawing) return; if(e.cancelable) e.preventDefault(); endPoint = getCanvasPoint(e); draw(); }
 function handleEnd() { if(!isDrawing) return; isDrawing = false; calculateSplit(); draw(); }
 
+// 難易度ボタンなど他の要素の邪魔をしないよう、イベントの対象を整理
 canvas.addEventListener('mousedown', handleStart);
-canvas.addEventListener('mousemove', handleMove);
+window.addEventListener('mousemove', handleMove);
 window.addEventListener('mouseup', handleEnd);
+
 canvas.addEventListener('touchstart', handleStart, {passive: false});
-canvas.addEventListener('touchmove', handleMove, {passive: false});
-canvas.addEventListener('touchend', handleEnd);
+window.addEventListener('touchmove', handleMove, {passive: false});
+window.addEventListener('touchend', handleEnd);
 
 document.fonts.ready.then(() => initGame());
