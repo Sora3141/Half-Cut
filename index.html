@@ -9,10 +9,10 @@
 </head>
 <body id="mainBody">
     <div class="scanline"></div>
-    <button id="helpBtn" onclick="toggleHelp()">?</button>
+    <button id="helpBtn">?</button>
 
-    <div id="helpModal" class="modal-overlay" onclick="toggleHelp()">
-        <div class="modal-content" onclick="event.stopPropagation()">
+    <div id="helpModal" class="modal-overlay">
+        <div class="modal-content">
             <h2>// RULE_SET: 50_50_PROTOCOL</h2>
             <div class="modal-body">
                 <p><span class="highlight">LV.1:</span> 凹凸の少ない基本形状</p>
@@ -22,20 +22,20 @@
                 <p><span class="highlight">S+ [ 0.0% ]:</span> PERFECT</p>
                 <p><span class="highlight">S  [ &lt;1.0% ]:</span> CRITICAL</p>
             </div>
-            <button class="close-btn" onclick="toggleHelp()">[ CLOSE_WINDOW ]</button>
+            <button class="close-btn">[ CLOSE_WINDOW ]</button>
         </div>
     </div>
 
     <div class="app-container" id="appContainer">
         <header>
             <h1 class="glitch" data-text="50:50">50:50</h1>
-            <p class="subtitle">// AREA SPLIT PROTOCOL : v2.2.3</p>
+            <p class="subtitle">// AREA SPLIT PROTOCOL : v2.2.4</p>
         </header>
 
         <div class="difficulty-selector">
-            <button class="diff-btn active" onclick="setDifficulty(event, 1)">LV.1</button>
-            <button class="diff-btn" onclick="setDifficulty(event, 2)">LV.2</button>
-            <button class="diff-btn" onclick="setDifficulty(event, 3)">LV.3</button>
+            <button class="diff-btn active" data-level="1">LV.1</button>
+            <button class="diff-btn" data-level="2">LV.2</button>
+            <button class="diff-btn" data-level="3">LV.3</button>
         </div>
 
         <div class="canvas-wrapper">
@@ -49,7 +49,7 @@
 
         <div class="ui-panel">
             <div id="result">INITIALIZING SYSTEM...</div>
-            <button id="resetBtn" onclick="initGame()">>> NEXT SHAPE</button>
+            <button id="resetBtn">>> NEXT SHAPE</button>
         </div>
     </div>
     <script src="game.js"></script>

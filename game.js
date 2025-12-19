@@ -12,16 +12,16 @@ let startPoint = null;
 let endPoint = null;
 let currentDifficulty = 1;
 
-// 難易度変更：イベント伝播を停止させてChromeの誤動作を防ぐ
-function setDifficulty(e, lv) {
-    if(e) e.stopPropagation();
+// 難易度変更ロジック：Chromeでの更新を保証
+function updateDifficulty(lv) {
     currentDifficulty = parseInt(lv);
-    
     document.querySelectorAll('.diff-btn').forEach((btn, i) => {
         btn.classList.toggle('active', i + 1 === currentDifficulty);
     });
-
-    initGame();
+    // ChromeのUI描画バグ対策：一瞬空けてから生成
+    setTimeout(() => {
+        initGame();
+    }, 10);
 }
 
 function initGame() {
@@ -184,7 +184,7 @@ function isPointInPolygon(pt, poly) {
 }
 
 function toggleHelp() {
-    const modal = document.getElementById('helpModal');
+    const modal = document.querySelector('.modal-overlay');
     modal.style.display = (modal.style.display === 'flex') ? 'none' : 'flex';
 }
 
@@ -198,13 +198,30 @@ function handleStart(e) {
 function handleMove(e) { if(!isDrawing) return; if(e.cancelable) e.preventDefault(); endPoint = getCanvasPoint(e); draw(); }
 function handleEnd() { if(!isDrawing) return; isDrawing = false; calculateSplit(); draw(); }
 
-// Chrome向けに passive: false を明示的にセット
+// イベント初期化
 canvas.addEventListener('mousedown', handleStart);
 window.addEventListener('mousemove', handleMove);
 window.addEventListener('mouseup', handleEnd);
-
 canvas.addEventListener('touchstart', handleStart, {passive: false});
 window.addEventListener('touchmove', handleMove, {passive: false});
 window.addEventListener('touchend', handleEnd, {passive: false});
+
+// 難易度ボタンのChrome対策（明示的なリスナー登録）
+document.querySelectorAll('.diff-btn').forEach(btn => {
+    const handler = (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        updateDifficulty(btn.getAttribute('data-level'));
+    };
+    btn.addEventListener('touchstart', handler, {passive: false});
+    btn.addEventListener('click', handler);
+});
+
+// リセット & ヘルプ
+document.getElementById('resetBtn').addEventListener('click', () => initGame());
+document.getElementById('resetBtn').addEventListener('touchstart', (e) => { e.preventDefault(); initGame(); });
+document.getElementById('helpBtn').addEventListener('click', toggleHelp);
+document.querySelector('.close-btn').addEventListener('click', toggleHelp);
+document.querySelector('.modal-overlay').addEventListener('click', toggleHelp);
 
 document.fonts.ready.then(() => initGame());

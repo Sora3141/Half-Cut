@@ -5,9 +5,8 @@
     --accent-magenta: #ff00ff;
 }
 
-/* Chromeの「引いて更新（Pull to refresh）」を防止 */
 html, body {
-    overscroll-behavior-y: contain;
+    overscroll-behavior-y: contain; /* Chromeの引っ張って更新を防止 */
 }
 
 body {
@@ -29,7 +28,7 @@ body {
     gap: 10px;
     margin-bottom: 15px;
     position: relative;
-    z-index: 100; /* 重なりを確実に一番上へ */
+    z-index: 100;
 }
 
 .diff-btn {
@@ -41,7 +40,8 @@ body {
     color: var(--accent-cyan);
     cursor: pointer;
     font-family: 'Orbitron';
-    touch-action: auto; /* ボタンは標準操作を許可 */
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .diff-btn.active {
@@ -58,7 +58,7 @@ body {
     font-family: 'Orbitron', sans-serif;
     font-size: 3.5rem;
     font-weight: 900;
-    pointer-events: none !important; 
+    pointer-events: none !important;
     z-index: 10;
     opacity: 0;
     white-space: nowrap;
@@ -85,7 +85,9 @@ canvas { width: 100% !important; height: auto !important; background-color: #000
 .canvas-header, .canvas-footer { font-size: 0.6rem; padding: 5px 10px; background: rgba(0, 242, 255, 0.1); text-align: left; }
 
 #result { height: 90px; margin-bottom: 10px; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-button#resetBtn { background-color: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 12px 30px; font-family: 'Orbitron'; cursor: pointer; }
+button#resetBtn, button.close-btn { background-color: transparent; color: var(--accent-cyan); border: 1px solid var(--accent-cyan); padding: 12px 30px; font-family: 'Orbitron'; cursor: pointer; }
+
+#helpBtn { position: absolute; top: 20px; right: 20px; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--accent-cyan); color: var(--accent-cyan); background: transparent; cursor: pointer; z-index: 100; }
 
 .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(8px); }
 .modal-content { background: #121214; border: 2px solid var(--accent-cyan); padding: 25px; width: 85%; max-width: 400px; border-radius: 10px; }
