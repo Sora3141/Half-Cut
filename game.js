@@ -12,44 +12,35 @@ let startPoint = null;
 let endPoint = null;
 let currentDifficulty = 1;
 
-// 難易度変更ロジック：Chromeでの更新を保証
-function updateDifficulty(lv) {
-    currentDifficulty = parseInt(lv);
-    document.querySelectorAll('.diff-btn').forEach((btn, i) => {
-        btn.classList.toggle('active', i + 1 === currentDifficulty);
+// 汎用ボタンイベント：Chrome/Safari両対応
+function addSmartEventListener(el, callback) {
+    let touched = false;
+    el.addEventListener('touchstart', (e) => {
+        touched = true;
+        e.preventDefault();
+        callback(e);
+    }, { passive: false });
+    el.addEventListener('click', (e) => {
+        if (!touched) callback(e);
+        touched = false;
     });
-    // ChromeのUI描画バグ対策：一瞬空けてから生成
-    setTimeout(() => {
-        initGame();
-    }, 10);
 }
 
 function initGame() {
     holePolygon = [];
     let vertices, minR, maxR;
-
-    if (currentDifficulty === 1) {
-        vertices = Math.floor(Math.random() * 3) + 5;
-        minR = 0.7; maxR = 0.9;
-    } else if (currentDifficulty === 2) {
-        vertices = Math.floor(Math.random() * 5) + 8;
-        minR = 0.3; maxR = 1.2;
-    } else {
-        vertices = Math.floor(Math.random() * 6) + 10;
-        minR = 0.4; maxR = 1.1;
-        const hx = 300 + (Math.random() - 0.5) * 50;
-        const hy = 200 + (Math.random() - 0.5) * 50;
-        holePolygon = generateRandomPolygon(hx, hy, 40, 6, 0.5, 0.8);
+    if (currentDifficulty === 1) { vertices = 6; minR = 0.7; maxR = 0.9; }
+    else if (currentDifficulty === 2) { vertices = 10; minR = 0.3; maxR = 1.2; }
+    else {
+        vertices = 12; minR = 0.4; maxR = 1.1;
+        holePolygon = generateRandomPolygon(300 + (Math.random()-0.5)*40, 200 + (Math.random()-0.5)*40, 40, 6, 0.5, 0.8);
     }
-
     polygon = generateRandomPolygon(300, 200, 120, vertices, minR, maxR);
     resetLineState();
-    
     appContainer.classList.remove('shake-heavy', 'shake-sharp');
     judgmentOverlay.classList.remove('pop-animation');
     judgmentOverlay.style.opacity = "0";
-    resultDisplay.innerHTML = ">> AWAITING OPERATOR INPUT...";
-    resultDisplay.style.color = "#00f2ff";
+    resultDisplay.innerHTML = ">> AWAITING INPUT...";
     draw();
 }
 
@@ -71,17 +62,22 @@ function isInsideTarget(pt) {
     return inMain && !inHole;
 }
 
+function isPointInPolygon(pt, poly) {
+    let inside = false;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+        if (((poly[i].y > pt.y) !== (poly[j].y > pt.y)) && (pt.x < (poly[j].x - poly[i].x) * (pt.y - poly[i].y) / (poly[j].y - poly[i].y) + poly[i].x)) inside = !inside;
+    }
+    return inside;
+}
+
 function calculateSplit() {
     if (!startPoint || !endPoint) return;
     const dist = Math.sqrt(Math.pow(endPoint.x - startPoint.x, 2) + Math.pow(endPoint.y - startPoint.y, 2));
     if (dist < 20) { resetLineState(); return; }
-
     if (isInsideTarget(startPoint) || isInsideTarget(endPoint)) {
-        resultDisplay.innerHTML = "!! ERROR: INCOMPLETE SLIT !!";
-        resultDisplay.style.color = "#ff00ff";
+        resultDisplay.innerHTML = "!! ERROR: INCOMPLETE !!";
         return;
     }
-
     let countCyan = 0; let totalSamples = 0;
     for (let x = 0; x < canvas.width; x += 5) {
         for (let y = 0; y < canvas.height; y += 5) {
@@ -92,43 +88,22 @@ function calculateSplit() {
             }
         }
     }
-
     if (totalSamples === 0 || countCyan === 0 || countCyan === totalSamples) {
-        resultDisplay.innerHTML = "!! ERROR: TARGET NOT ACQUIRED !!";
-        resultDisplay.style.color = "#ff00ff";
-        isEvaluated = false;
+        resultDisplay.innerHTML = "!! ERROR: NO TARGET !!";
         return;
     }
-
     isEvaluated = true;
     const ratioCyan = (countCyan / totalSamples) * 100;
-    const ratioMagenta = 100 - ratioCyan;
     const diff = Math.abs(50 - ratioCyan);
-    
-    let rankTitle = ""; let rankColor = "#00f2ff"; let shakeClass = "";
-    appContainer.classList.remove('shake-heavy', 'shake-sharp');
-    judgmentOverlay.classList.remove('pop-animation');
-    void appContainer.offsetWidth; 
-
-    if (diff === 0) { rankTitle = "PERFECT"; rankColor = "#fff"; shakeClass = "shake-sharp"; }
-    else if (diff < 1.0) { rankTitle = "CRITICAL"; rankColor = "#00f2ff"; shakeClass = "shake-sharp"; }
-    else if (diff < 5.0) { rankTitle = "SECURED"; rankColor = "#fff"; }
-    else { rankTitle = "OUT OF RANGE"; rankColor = "#ff00ff"; shakeClass = "shake-heavy"; }
-
-    if (shakeClass) appContainer.classList.add(shakeClass);
-    judgmentOverlay.innerText = rankTitle;
-    judgmentOverlay.style.color = rankColor;
-    judgmentOverlay.style.textShadow = `0 0 20px ${rankColor}`;
+    let rank = ""; let shake = "";
+    if (diff === 0) { rank = "PERFECT"; shake = "shake-sharp"; }
+    else if (diff < 1) { rank = "CRITICAL"; shake = "shake-sharp"; }
+    else if (diff < 5) { rank = "SECURED"; }
+    else { rank = "OUT RANGE"; shake = "shake-heavy"; }
+    if (shake) appContainer.classList.add(shake);
+    judgmentOverlay.innerText = rank;
     judgmentOverlay.classList.add('pop-animation');
-
-    resultDisplay.innerHTML = `
-        <div style="display:flex; justify-content:center; gap:20px; font-size:1.8rem; font-family:'Orbitron'; line-height: 1;">
-            <span style="color:#00f2ff;">${ratioCyan.toFixed(1)}%</span>
-            <span style="color:#fff; opacity:0.2;">:</span>
-            <span style="color:#ff00ff;">${ratioMagenta.toFixed(1)}%</span>
-        </div>
-        <div style="color:${rankColor}; font-size:0.8rem; margin-top:10px; letter-spacing:2px;">>> ANALYSIS_COMPLETE: ${rankTitle}</div>
-    `;
+    resultDisplay.innerHTML = `<div style="font-size:1.8rem;">${ratioCyan.toFixed(1)}% : ${(100-ratioCyan).toFixed(1)}%</div><div>${rank}</div>`;
 }
 
 function draw() {
@@ -170,35 +145,21 @@ function getCanvasPoint(e) {
     const rect = canvas.getBoundingClientRect();
     const clientX = (e.touches && e.touches.length > 0) ? e.touches[0].clientX : e.clientX;
     const clientY = (e.touches && e.touches.length > 0) ? e.touches[0].clientY : e.clientY;
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+    return { x: (clientX - rect.left) * (canvas.width / rect.width), y: (clientY - rect.top) * (canvas.height / rect.height) };
 }
 
-function isPointInPolygon(pt, poly) {
-    let inside = false;
-    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
-        if (((poly[i].y > pt.y) !== (poly[j].y > pt.y)) && (pt.x < (poly[j].x - poly[i].x) * (pt.y - poly[i].y) / (poly[j].y - poly[i].y) + poly[i].x)) inside = !inside;
-    }
-    return inside;
-}
-
-function toggleHelp() {
-    const modal = document.querySelector('.modal-overlay');
-    modal.style.display = (modal.style.display === 'flex') ? 'none' : 'flex';
-}
-
-function handleStart(e) { 
-    if(e.cancelable) e.preventDefault(); 
-    resetLineState(); 
-    judgmentOverlay.classList.remove('pop-animation'); judgmentOverlay.style.opacity = "0";
+function handleStart(e) {
+    if(e.target !== canvas) return;
+    if(e.cancelable) e.preventDefault();
+    resetLineState();
+    judgmentOverlay.classList.remove('pop-animation');
+    judgmentOverlay.style.opacity = "0";
     appContainer.classList.remove('shake-heavy', 'shake-sharp');
-    startPoint = getCanvasPoint(e); endPoint = startPoint; isDrawing = true; draw(); 
+    startPoint = getCanvasPoint(e); endPoint = startPoint; isDrawing = true; draw();
 }
 function handleMove(e) { if(!isDrawing) return; if(e.cancelable) e.preventDefault(); endPoint = getCanvasPoint(e); draw(); }
 function handleEnd() { if(!isDrawing) return; isDrawing = false; calculateSplit(); draw(); }
 
-// イベント初期化
 canvas.addEventListener('mousedown', handleStart);
 window.addEventListener('mousemove', handleMove);
 window.addEventListener('mouseup', handleEnd);
@@ -206,22 +167,21 @@ canvas.addEventListener('touchstart', handleStart, {passive: false});
 window.addEventListener('touchmove', handleMove, {passive: false});
 window.addEventListener('touchend', handleEnd, {passive: false});
 
-// 難易度ボタンのChrome対策（明示的なリスナー登録）
+// 難易度ボタン設定
 document.querySelectorAll('.diff-btn').forEach(btn => {
-    const handler = (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        updateDifficulty(btn.getAttribute('data-level'));
-    };
-    btn.addEventListener('touchstart', handler, {passive: false});
-    btn.addEventListener('click', handler);
+    addSmartEventListener(btn, () => {
+        currentDifficulty = parseInt(btn.getAttribute('data-level'));
+        document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        initGame();
+    });
 });
 
-// リセット & ヘルプ
-document.getElementById('resetBtn').addEventListener('click', () => initGame());
-document.getElementById('resetBtn').addEventListener('touchstart', (e) => { e.preventDefault(); initGame(); });
-document.getElementById('helpBtn').addEventListener('click', toggleHelp);
-document.querySelector('.close-btn').addEventListener('click', toggleHelp);
-document.querySelector('.modal-overlay').addEventListener('click', toggleHelp);
+// NEXTボタン・HELPボタン
+addSmartEventListener(document.getElementById('resetBtn'), initGame);
+const helpModal = document.querySelector('.modal-overlay');
+addSmartEventListener(document.getElementById('helpBtn'), () => helpModal.style.display = 'flex');
+addSmartEventListener(document.getElementById('closeHelp'), () => helpModal.style.display = 'none');
+addSmartEventListener(helpModal, () => helpModal.style.display = 'none');
 
 document.fonts.ready.then(() => initGame());
