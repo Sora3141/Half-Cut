@@ -5,15 +5,42 @@ const appContainer = document.getElementById('appContainer');
 const judgmentOverlay = document.getElementById('judgmentOverlay');
 
 let polygon = [];
+let holePolygon = [];
 let isDrawing = false;
 let isEvaluated = false;
 let startPoint = null;
 let endPoint = null;
+let currentDifficulty = 1;
+
+function setDifficulty(lv) {
+    currentDifficulty = lv;
+    document.querySelectorAll('.diff-btn').forEach((btn, i) => {
+        btn.classList.toggle('active', i + 1 === lv);
+    });
+    initGame();
+}
 
 function initGame() {
-    const vertices = Math.floor(Math.random() * 4) + 6;
-    polygon = generateRandomPolygon(300, 200, 120, vertices);
+    holePolygon = [];
+    let vertices, minR, maxR;
+
+    if (currentDifficulty === 1) {
+        vertices = Math.floor(Math.random() * 3) + 5;
+        minR = 0.7; maxR = 0.9;
+    } else if (currentDifficulty === 2) {
+        vertices = Math.floor(Math.random() * 5) + 8;
+        minR = 0.3; maxR = 1.2;
+    } else {
+        vertices = Math.floor(Math.random() * 6) + 10;
+        minR = 0.4; maxR = 1.1;
+        const hx = 300 + (Math.random() - 0.5) * 40;
+        const hy = 200 + (Math.random() - 0.5) * 40;
+        holePolygon = generateRandomPolygon(hx, hy, 40, 6, 0.5, 0.8);
+    }
+
+    polygon = generateRandomPolygon(300, 200, 120, vertices, minR, maxR);
     resetLineState();
+    
     appContainer.classList.remove('shake-heavy', 'shake-sharp');
     judgmentOverlay.classList.remove('pop-animation');
     judgmentOverlay.style.opacity = "0";
@@ -26,31 +53,37 @@ function resetLineState() {
     startPoint = null; endPoint = null; isDrawing = false; isEvaluated = false;
 }
 
-function generateRandomPolygon(cx, cy, avgRadius, numPoints) {
+function generateRandomPolygon(cx, cy, avgRadius, numPoints, minR, maxR) {
     const points = [];
     for (let i = 0; i < numPoints; i++) {
         const angle = (i / numPoints) * Math.PI * 2;
-        const r = avgRadius * (0.6 + Math.random() * 0.7);
+        const r = avgRadius * (minR + Math.random() * (maxR - minR));
         points.push({ x: cx + Math.cos(angle) * r, y: cy + Math.sin(angle) * r });
     }
     return points;
 }
 
+function isInsideTarget(pt) {
+    const inMain = isPointInPolygon(pt, polygon);
+    const inHole = holePolygon.length > 0 ? isPointInPolygon(pt, holePolygon) : false;
+    return inMain && !inHole;
+}
+
 function calculateSplit() {
     if (!startPoint || !endPoint) return;
     const dist = Math.sqrt(Math.pow(endPoint.x - startPoint.x, 2) + Math.pow(endPoint.y - startPoint.y, 2));
-    if (dist < 15) { resetLineState(); return; }
+    if (dist < 20) { resetLineState(); return; }
 
-    if (isPointInPolygon(startPoint, polygon) || isPointInPolygon(endPoint, polygon)) {
+    if (isInsideTarget(startPoint) || isInsideTarget(endPoint)) {
         resultDisplay.innerHTML = "!! ERROR: INCOMPLETE SLIT !!";
         resultDisplay.style.color = "#ff00ff";
         return;
     }
 
     let countCyan = 0; let totalSamples = 0;
-    for (let x = 100; x < 500; x += 4) {
-        for (let y = 50; y < 350; y += 4) {
-            if (isPointInPolygon({x, y}, polygon)) {
+    for (let x = 0; x < canvas.width; x += 4) {
+        for (let y = 0; y < canvas.height; y += 4) {
+            if (isInsideTarget({x, y})) {
                 totalSamples++;
                 const val = (endPoint.y - startPoint.y) * (x - startPoint.x) - (endPoint.x - startPoint.x) * (y - startPoint.y);
                 if (val > 0) countCyan++;
@@ -70,30 +103,16 @@ function calculateSplit() {
     const ratioMagenta = 100 - ratioCyan;
     const diff = Math.abs(50 - ratioCyan);
     
-    let rankTitle = "";
-    let rankColor = "#00f2ff";
-    let shakeClass = "";
+    let rankTitle = ""; let rankColor = "#00f2ff"; let shakeClass = "";
 
     appContainer.classList.remove('shake-heavy', 'shake-sharp');
     judgmentOverlay.classList.remove('pop-animation');
     void appContainer.offsetWidth; 
 
-    if (diff === 0) {
-        rankTitle = "PERFECT";
-        rankColor = "#ffffff";
-        shakeClass = "shake-sharp";
-    } else if (diff < 1.0) {
-        rankTitle = "CRITICAL";
-        rankColor = "#00f2ff";
-        shakeClass = "shake-sharp";
-    } else if (diff < 5.0) {
-        rankTitle = "SECURED";
-        rankColor = "#ffffff";
-    } else {
-        rankTitle = "OUT OF RANGE";
-        rankColor = "#ff00ff";
-        shakeClass = "shake-heavy";
-    }
+    if (diff === 0) { rankTitle = "PERFECT"; rankColor = "#fff"; shakeClass = "shake-sharp"; }
+    else if (diff < 1.0) { rankTitle = "CRITICAL"; rankColor = "#00f2ff"; shakeClass = "shake-sharp"; }
+    else if (diff < 5.0) { rankTitle = "SECURED"; rankColor = "#fff"; }
+    else { rankTitle = "OUT OF RANGE"; rankColor = "#ff00ff"; shakeClass = "shake-heavy"; }
 
     if (shakeClass) appContainer.classList.add(shakeClass);
     judgmentOverlay.innerText = rankTitle;
@@ -102,38 +121,49 @@ function calculateSplit() {
     judgmentOverlay.classList.add('pop-animation');
 
     resultDisplay.innerHTML = `
-        <div style="display: flex; justify-content: center; gap: 20px; font-size: 1.8rem; font-family: 'Orbitron'; line-height: 1;">
-            <span style="color: #00f2ff;">${ratioCyan.toFixed(1)}%</span>
-            <span style="color: #fff; opacity: 0.2;">:</span>
-            <span style="color: #ff00ff;">${ratioMagenta.toFixed(1)}%</span>
+        <div style="display:flex; justify-content:center; gap:20px; font-size:1.8rem; font-family:'Orbitron'; line-height: 1;">
+            <span style="color:#00f2ff;">${ratioCyan.toFixed(1)}%</span>
+            <span style="color:#fff; opacity:0.2;">:</span>
+            <span style="color:#ff00ff;">${ratioMagenta.toFixed(1)}%</span>
         </div>
-        <div style="color: ${rankColor}; font-size: 0.8rem; margin-top: 10px; letter-spacing: 2px;">>> ANALYSIS_COMPLETE: ${rankTitle}</div>
+        <div style="color:${rankColor}; font-size:0.8rem; margin-top:10px; letter-spacing:2px;">>> ANALYSIS_COMPLETE: ${rankTitle}</div>
     `;
 }
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // 背景グリッド
     ctx.fillStyle = "rgba(0, 242, 255, 0.05)";
     for(let x=0; x<canvas.width; x+=20) for(let y=0; y<canvas.height; y+=20) ctx.fillRect(x, y, 1, 1);
 
-    const path = new Path2D();
-    path.moveTo(polygon[0].x, polygon[0].y);
-    polygon.forEach(p => path.lineTo(p.x, p.y));
-    path.closePath();
-
-    if (isEvaluated && startPoint && endPoint) {
-        ctx.fillStyle = "rgba(255, 0, 255, 0.2)"; 
-        ctx.fill(path);
-        ctx.save(); ctx.clip(path);
-        const angle = Math.atan2(endPoint.y - startPoint.y, endPoint.x - startPoint.x);
-        ctx.translate(startPoint.x, startPoint.y); ctx.rotate(angle);
-        ctx.fillStyle = "rgba(0, 242, 255, 0.3)"; 
-        ctx.fillRect(-2000, -2000, 4000, 2000); ctx.restore();
-    } else {
-        ctx.fillStyle = "rgba(0, 242, 255, 0.05)"; ctx.fill(path);
+    const mainPath = new Path2D();
+    mainPath.moveTo(polygon[0].x, polygon[0].y);
+    polygon.forEach(p => mainPath.lineTo(p.x, p.y));
+    mainPath.closePath();
+    if (holePolygon.length > 0) {
+        mainPath.moveTo(holePolygon[0].x, holePolygon[0].y);
+        holePolygon.forEach(p => mainPath.lineTo(p.x, p.y));
+        mainPath.closePath();
     }
 
-    ctx.strokeStyle = "#00f2ff"; ctx.lineWidth = 2; ctx.stroke(path);
+    if (isEvaluated && startPoint && endPoint) {
+        // 判定後の塗り分け
+        ctx.fillStyle = "rgba(255, 0, 255, 0.25)";
+        ctx.fill(mainPath, "evenodd");
+        ctx.save(); ctx.clip(mainPath, "evenodd");
+        const angle = Math.atan2(endPoint.y - startPoint.y, endPoint.x - startPoint.x);
+        ctx.translate(startPoint.x, startPoint.y); ctx.rotate(angle);
+        ctx.fillStyle = "rgba(0, 242, 255, 0.35)";
+        ctx.fillRect(-3000, -3000, 6000, 3000); ctx.restore();
+    } else {
+        // カット前の図形実体化（ここを少し明るくして穴と区別）
+        ctx.fillStyle = "rgba(0, 242, 255, 0.12)";
+        ctx.fill(mainPath, "evenodd");
+    }
+
+    // 外枠
+    ctx.strokeStyle = "rgba(0, 242, 255, 0.8)"; 
+    ctx.lineWidth = 2; ctx.stroke(mainPath);
 
     if (startPoint && endPoint) {
         ctx.beginPath(); ctx.moveTo(startPoint.x, startPoint.y); ctx.lineTo(endPoint.x, endPoint.y);
@@ -166,17 +196,11 @@ function toggleHelp() {
 }
 
 function handleStart(e) { 
-    if(e.cancelable) e.preventDefault(); 
-    resetLineState(); 
-    judgmentOverlay.classList.remove('pop-animation');
-    judgmentOverlay.style.opacity = "0";
+    if(e.cancelable) e.preventDefault(); resetLineState(); 
+    judgmentOverlay.classList.remove('pop-animation'); judgmentOverlay.style.opacity = "0";
     appContainer.classList.remove('shake-heavy', 'shake-sharp');
-    startPoint = getCanvasPoint(e); 
-    endPoint = startPoint; 
-    isDrawing = true; 
-    draw(); 
+    startPoint = getCanvasPoint(e); endPoint = startPoint; isDrawing = true; draw(); 
 }
-
 function handleMove(e) { if(!isDrawing) return; if(e.cancelable) e.preventDefault(); endPoint = getCanvasPoint(e); draw(); }
 function handleEnd() { if(!isDrawing) return; isDrawing = false; calculateSplit(); draw(); }
 

@@ -15,10 +15,12 @@
         <div class="modal-content" onclick="event.stopPropagation()">
             <h2>// RULE_SET: 50_50_PROTOCOL</h2>
             <div class="modal-body">
-                <p><span class="highlight">S+ [ 0.0% ]:</span> PERFECT EQUILIBRIUM</p>
-                <p><span class="highlight">S  [ &lt;1.0% ]:</span> CRITICAL PRECISION</p>
-                <p><span class="highlight">A  [ &lt;5.0% ]:</span> TARGET SECURED</p>
-                <p><span class="highlight">B  [ OTHER ]:</span> OUT OF RANGE</p>
+                <p><span class="highlight">LV.1:</span> 凹凸の少ない基本形状</p>
+                <p><span class="highlight">LV.2:</span> 凹凸の激しい複雑形状</p>
+                <p><span class="highlight">LV.3:</span> 中空構造（穴あき）図形</p>
+                <hr style="border:0; border-top:1px solid rgba(0,242,255,0.2); margin:10px 0;">
+                <p><span class="highlight">S+ [ 0.0% ]:</span> PERFECT</p>
+                <p><span class="highlight">S  [ &lt;1.0% ]:</span> CRITICAL</p>
             </div>
             <button class="close-btn" onclick="toggleHelp()">[ CLOSE_WINDOW ]</button>
         </div>
@@ -27,11 +29,17 @@
     <div class="app-container" id="appContainer">
         <header>
             <h1 class="glitch" data-text="50:50">50:50</h1>
-            <p class="subtitle">// AREA SPLIT PROTOCOL : v2.1.1</p>
+            <p class="subtitle">// AREA SPLIT PROTOCOL : v2.2.1</p>
         </header>
 
+        <div class="difficulty-selector">
+            <button class="diff-btn active" onclick="setDifficulty(1)">LV.1</button>
+            <button class="diff-btn" onclick="setDifficulty(2)">LV.2</button>
+            <button class="diff-btn" onclick="setDifficulty(3)">LV.3</button>
+        </div>
+
         <div class="canvas-wrapper">
-            <div class="canvas-header">SYSTEM_CORE_VIEW // ANALYSIS_MODE</div>
+            <div class="canvas-header">SYSTEM_CORE_VIEW // ID: 8842-X</div>
             <div style="position: relative; overflow: hidden;">
                 <canvas id="gameCanvas" width="600" height="400"></canvas>
                 <div id="judgmentOverlay" class="judgment-overlay"></div>
