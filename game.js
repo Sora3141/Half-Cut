@@ -12,39 +12,50 @@ let startPoint = null;
 let endPoint = null;
 let currentDifficulty = 1;
 
-// --- Chrome/Safari共通: ボタン反応を確実にするバインド関数 ---
+// --- 修正：Chrome/Safari共通の「排他的」ボタンバインド ---
+let isProcessingEvent = false;
+
 function bindButton(id, callback) {
     const el = document.getElementById(id);
     if (!el) return;
     
-    // タッチイベント(スマホ最優先)
-    el.addEventListener('touchstart', (e) => {
-        e.preventDefault(); e.stopPropagation();
+    const unifiedHandler = (e) => {
+        if (isProcessingEvent) return; // 二重処理防止
+        isProcessingEvent = true;
+        
+        e.preventDefault();
+        e.stopPropagation();
+        
         callback();
-    }, { passive: false });
+        
+        // 短いインターバルを置いてロック解除（連打防止）
+        setTimeout(() => { isProcessingEvent = false; }, 200);
+    };
 
-    // マウスイベント
-    el.addEventListener('mousedown', (e) => {
-        e.preventDefault(); e.stopPropagation();
-        callback();
-    });
+    // Chromeはtouchstartを優先、PCはmousedown
+    el.addEventListener('touchstart', unifiedHandler, { passive: false });
+    el.addEventListener('mousedown', unifiedHandler);
 }
 
 function initGame() {
     holePolygon = [];
     let vertices, minR, maxR;
     
-    if (currentDifficulty === 1) { vertices = 6; minR = 0.7; maxR = 0.9; }
-    else if (currentDifficulty === 2) { vertices = 10; minR = 0.3; maxR = 1.2; }
-    else {
+    // 確実に数値として比較
+    const level = parseInt(currentDifficulty);
+
+    if (level === 1) { 
+        vertices = 6; minR = 0.7; maxR = 0.9; 
+    } else if (level === 2) { 
+        vertices = 10; minR = 0.3; maxR = 1.2; 
+    } else if (level === 3) {
         vertices = 14; minR = 0.4; maxR = 1.1;
-        holePolygon = generateRandomPolygon(300 + (Math.random()-0.5)*50, 200 + (Math.random()-0.5)*50, 40, 6, 0.5, 0.8);
+        holePolygon = generateRandomPolygon(300 + (Math.random()-0.5)*50, 200 + (Math.random()-0.5)*40, 40, 6, 0.5, 0.8);
     }
 
     polygon = generateRandomPolygon(300, 200, 120, vertices, minR, maxR);
     resetLineState();
     
-    // 演出リセット
     appContainer.classList.remove('shake-heavy', 'shake-sharp');
     judgmentOverlay.classList.remove('pop-animation');
     judgmentOverlay.style.opacity = "0";
@@ -53,11 +64,16 @@ function initGame() {
 }
 
 function changeDifficulty(lv) {
-    currentDifficulty = lv;
-    document.querySelectorAll('.diff-btn').forEach((btn, i) => {
-        btn.classList.toggle('active', i + 1 === lv);
+    const targetLv = parseInt(lv);
+    currentDifficulty = targetLv;
+    
+    // UI更新
+    document.querySelectorAll('.diff-btn').forEach((btn) => {
+        const btnLv = parseInt(btn.getAttribute('data-level'));
+        btn.classList.toggle('active', btnLv === targetLv);
     });
-    // ChromeのUI更新バグ対策: 描画フレームを予約
+
+    // 描画予約
     requestAnimationFrame(() => {
         initGame();
     });
@@ -133,7 +149,6 @@ function calculateSplit() {
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    // Grid
     ctx.fillStyle = "rgba(0, 242, 255, 0.05)";
     for(let x=0; x<canvas.width; x+=20) for(let y=0; y<canvas.height; y+=20) ctx.fillRect(x, y, 1, 1);
     
@@ -192,11 +207,14 @@ function handleStart(e) {
 function handleMove(e) { if(!isDrawing) return; if(e.cancelable) e.preventDefault(); endPoint = getCanvasPoint(e); draw(); }
 function handleEnd() { if(!isDrawing) return; isDrawing = false; calculateSplit(); draw(); }
 
-// イベント紐付け
+// --- 初期化 ---
 window.addEventListener('DOMContentLoaded', () => {
-    bindButton('lv1-btn', () => changeDifficulty(1));
-    bindButton('lv2-btn', () => changeDifficulty(2));
-    bindButton('lv3-btn', () => changeDifficulty(3));
+    // 難易度ボタンの紐付け
+    document.querySelectorAll('.diff-btn').forEach(btn => {
+        const lv = btn.getAttribute('data-level');
+        bindButton(btn.id, () => changeDifficulty(lv));
+    });
+
     bindButton('resetBtn', () => initGame());
     
     const helpModal = document.querySelector('.modal-overlay');
