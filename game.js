@@ -12,17 +12,13 @@ let startPoint = null;
 let endPoint = null;
 let currentDifficulty = 1;
 
-// 難易度変更：スマホ対応強化
-function setDifficulty(lv) {
+// 難易度変更：イベント伝播を停止させてChromeの誤動作を防ぐ
+function setDifficulty(e, lv) {
+    if(e) e.stopPropagation();
     currentDifficulty = parseInt(lv);
     
-    // UIの更新
     document.querySelectorAll('.diff-btn').forEach((btn, i) => {
-        if (i + 1 === currentDifficulty) {
-            btn.classList.add('active');
-        } else {
-            btn.classList.remove('active');
-        }
+        btn.classList.toggle('active', i + 1 === currentDifficulty);
     });
 
     initGame();
@@ -39,7 +35,6 @@ function initGame() {
         vertices = Math.floor(Math.random() * 5) + 8;
         minR = 0.3; maxR = 1.2;
     } else {
-        // LV.3 穴あき図形
         vertices = Math.floor(Math.random() * 6) + 10;
         minR = 0.4; maxR = 1.1;
         const hx = 300 + (Math.random() - 0.5) * 50;
@@ -58,9 +53,7 @@ function initGame() {
     draw();
 }
 
-function resetLineState() {
-    startPoint = null; endPoint = null; isDrawing = false; isEvaluated = false;
-}
+function resetLineState() { startPoint = null; endPoint = null; isDrawing = false; isEvaluated = false; }
 
 function generateRandomPolygon(cx, cy, avgRadius, numPoints, minR, maxR) {
     const points = [];
@@ -90,7 +83,6 @@ function calculateSplit() {
     }
 
     let countCyan = 0; let totalSamples = 0;
-    // スマホ負荷を考えステップ幅を微調整(5)
     for (let x = 0; x < canvas.width; x += 5) {
         for (let y = 0; y < canvas.height; y += 5) {
             if (isInsideTarget({x, y})) {
@@ -114,7 +106,6 @@ function calculateSplit() {
     const diff = Math.abs(50 - ratioCyan);
     
     let rankTitle = ""; let rankColor = "#00f2ff"; let shakeClass = "";
-
     appContainer.classList.remove('shake-heavy', 'shake-sharp');
     judgmentOverlay.classList.remove('pop-animation');
     void appContainer.offsetWidth; 
@@ -144,7 +135,6 @@ function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = "rgba(0, 242, 255, 0.05)";
     for(let x=0; x<canvas.width; x+=20) for(let y=0; y<canvas.height; y+=20) ctx.fillRect(x, y, 1, 1);
-
     const mainPath = new Path2D();
     mainPath.moveTo(polygon[0].x, polygon[0].y);
     polygon.forEach(p => mainPath.lineTo(p.x, p.y));
@@ -154,7 +144,6 @@ function draw() {
         holePolygon.forEach(p => mainPath.lineTo(p.x, p.y));
         mainPath.closePath();
     }
-
     if (isEvaluated && startPoint && endPoint) {
         ctx.fillStyle = "rgba(255, 0, 255, 0.25)";
         ctx.fill(mainPath, "evenodd");
@@ -167,10 +156,8 @@ function draw() {
         ctx.fillStyle = "rgba(0, 242, 255, 0.12)";
         ctx.fill(mainPath, "evenodd");
     }
-
     ctx.strokeStyle = "rgba(0, 242, 255, 0.8)"; 
     ctx.lineWidth = 2; ctx.stroke(mainPath);
-
     if (startPoint && endPoint) {
         ctx.beginPath(); ctx.moveTo(startPoint.x, startPoint.y); ctx.lineTo(endPoint.x, endPoint.y);
         ctx.strokeStyle = isDrawing ? "#ff00ff" : "#fff"; ctx.lineWidth = 2;
@@ -202,24 +189,22 @@ function toggleHelp() {
 }
 
 function handleStart(e) { 
-    if(e.target === canvas) {
-        if(e.cancelable) e.preventDefault(); 
-        resetLineState(); 
-        judgmentOverlay.classList.remove('pop-animation'); judgmentOverlay.style.opacity = "0";
-        appContainer.classList.remove('shake-heavy', 'shake-sharp');
-        startPoint = getCanvasPoint(e); endPoint = startPoint; isDrawing = true; draw(); 
-    }
+    if(e.cancelable) e.preventDefault(); 
+    resetLineState(); 
+    judgmentOverlay.classList.remove('pop-animation'); judgmentOverlay.style.opacity = "0";
+    appContainer.classList.remove('shake-heavy', 'shake-sharp');
+    startPoint = getCanvasPoint(e); endPoint = startPoint; isDrawing = true; draw(); 
 }
 function handleMove(e) { if(!isDrawing) return; if(e.cancelable) e.preventDefault(); endPoint = getCanvasPoint(e); draw(); }
 function handleEnd() { if(!isDrawing) return; isDrawing = false; calculateSplit(); draw(); }
 
-// 難易度ボタンなど他の要素の邪魔をしないよう、イベントの対象を整理
+// Chrome向けに passive: false を明示的にセット
 canvas.addEventListener('mousedown', handleStart);
 window.addEventListener('mousemove', handleMove);
 window.addEventListener('mouseup', handleEnd);
 
 canvas.addEventListener('touchstart', handleStart, {passive: false});
 window.addEventListener('touchmove', handleMove, {passive: false});
-window.addEventListener('touchend', handleEnd);
+window.addEventListener('touchend', handleEnd, {passive: false});
 
 document.fonts.ready.then(() => initGame());
