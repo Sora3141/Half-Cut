@@ -1,3 +1,5 @@
+# Half/Cut — 一本の線で、ぴったり半分に。
+
 <p align="center">
   <img src="icons/og.png" alt="Half/Cut — 一本の線で、ぴったり半分に。" width="720">
 </p>
