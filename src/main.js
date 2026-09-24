@@ -19,7 +19,7 @@ import {
 } from './scoring.js';
 import { generateShape, TIER_NAMES } from './shapes.js';
 import { store } from './storage.js';
-import { buzz, sfx } from './audio.js';
+import { buzz, setAudioSession, sfx } from './audio.js';
 
 const SITE_URL = 'https://sora3141.github.io/Half-Cut/';
 const MIN_DRAG = 28; // world units
@@ -832,9 +832,11 @@ function renderSoundButton() {
 }
 
 sfx.enabled = store.get('sound', true);
+setAudioSession(sfx.enabled);
 renderSoundButton();
 el.soundBtn.addEventListener('click', () => {
   sfx.enabled = !sfx.enabled;
+  setAudioSession(sfx.enabled);
   store.set('sound', sfx.enabled);
   renderSoundButton();
   sfx.unlock();

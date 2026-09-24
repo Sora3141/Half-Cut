@@ -9,6 +9,16 @@ const ARPEGGIOS = {
   miss: [62, 57],
 };
 
+// Let Web Audio play even with the iPhone ring/silent switch on (Safari 16.4+).
+// 'playback' pauses music from other apps, so only use it while our sound is on.
+export function setAudioSession(soundOn) {
+  try {
+    if (navigator.audioSession) navigator.audioSession.type = soundOn ? 'playback' : 'auto';
+  } catch {
+    /* unsupported */
+  }
+}
+
 class Sfx {
   constructor() {
     this.ctx = null;
@@ -18,6 +28,7 @@ class Sfx {
 
   unlock() {
     if (!this.enabled) return;
+    setAudioSession(true);
     if (!this.ctx) {
       const AC = window.AudioContext || window.webkitAudioContext;
       if (!AC) return;
