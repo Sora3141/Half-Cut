@@ -654,22 +654,45 @@ function showDailySummary(daily) {
   summaryTimer = setInterval(tick, 1000);
 }
 
-async function shareDaily(daily) {
-  const text = [
-    `Half-Cut #${daily.no}  ${daily.score}/${daily.total * 100}`,
-    daily.rounds.map((r) => gradeById(r.grade).emoji).join(''),
-    `誤差 ${daily.rounds.map((r) => fmt(r.error, 1)).join(' / ')}`,
-  ].join('\n');
+/** Native share sheet where it exists (phones), otherwise copy to the clipboard. */
+async function share({ text, url = SITE_URL, title = 'Half/Cut' }) {
+  sfx.tap();
+  const data = { title, text, url };
   try {
-    if (navigator.share && matchMedia('(pointer: coarse)').matches) {
-      await navigator.share({ text, url: SITE_URL });
+    if (navigator.share && matchMedia('(pointer: coarse)').matches && (!navigator.canShare || navigator.canShare(data))) {
+      await navigator.share(data);
       return;
     }
-    await navigator.clipboard.writeText(`${text}\n${SITE_URL}`);
-    globalToast('結果をコピーしました');
+    await navigator.clipboard.writeText(`${text}\n${url}`);
+    globalToast('クリップボードにコピーしました');
   } catch (err) {
-    if (err?.name !== 'AbortError') globalToast('コピーできませんでした');
+    if (err?.name !== 'AbortError') globalToast('シェアできませんでした');
   }
+}
+
+function shareApp() {
+  share({ text: '図形をスワイプ一本でぴったり半分に切るパズル「Half/Cut」✂️ 今日の5問、挑戦してみて！' });
+}
+
+function shareDaily(daily) {
+  share({
+    text: [
+      `Half/Cut #${daily.no}  ${daily.score}/${daily.total * 100}`,
+      daily.rounds.map((r) => gradeById(r.grade).emoji).join(''),
+      `誤差 ${daily.rounds.map((r) => fmt(r.error, 1)).join(' / ')}`,
+    ].join('\n'),
+  });
+}
+
+function shareEndless(m) {
+  const perfects = m.history.filter((h) => h.grade === 'perfect').length;
+  share({
+    text: [
+      `Half/Cut エンドレス ✂️ ${m.score}点（${m.round}枚）`,
+      m.history.slice(-15).map((h) => gradeById(h.grade).emoji).join(''),
+      `最大コンボ ${m.bestCombo} · 神業 ${perfects}回`,
+    ].join('\n'),
+  });
 }
 
 function showEndlessSummary(m) {
@@ -705,7 +728,8 @@ function showEndlessSummary(m) {
 
   summaryButtons([
     { label: 'もう一度', primary: true, onClick: () => startMode('endless') },
-    { label: 'メニューへ', onClick: () => showScreen('title') },
+    { label: 'シェア', icon: 'i-share', onClick: () => shareEndless(m) },
+    { label: 'メニューへ', wide: true, onClick: () => showScreen('title') },
   ]);
   $('summary-footer').textContent = `ベスト ${best.score}点 · ${best.rounds}枚`;
 }
@@ -865,6 +889,8 @@ window.addEventListener('appinstalled', () => {
   renderInstall();
   globalToast('ホーム画面に追加しました');
 });
+
+$('btn-share-app').addEventListener('click', shareApp);
 
 installBtn.addEventListener('click', async () => {
   sfx.unlock();

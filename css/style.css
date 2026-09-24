@@ -412,11 +412,18 @@ kbd {
   color: var(--bg);
 }
 
+.title__extras {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 22px;
+}
+
 .install-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  margin-top: 22px;
   padding: 10px 16px;
   border: 2px dashed var(--line);
   border-radius: 12px;
