@@ -21,7 +21,7 @@ import { generateShape, TIER_NAMES } from './shapes.js';
 import { store } from './storage.js';
 import { buzz, setAudioSession, sfx } from './audio.js';
 
-const SITE_URL = 'https://sora3141.github.io/Half-Cut/';
+const SITE_URL = 'https://t-of.github.io/Half-Cut/';
 const MIN_DRAG = 28; // world units
 const TAP_SLOP = 10; // css px
 const RESULT_TAP_DELAY = 650; // ms before a tap on the board advances

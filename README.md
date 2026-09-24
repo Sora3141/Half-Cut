@@ -4,7 +4,7 @@
   <img src="icons/og.png" alt="Half/Cut — 一本の線で、ぴったり半分に。" width="720">
 </p>
 
-<h3 align="center">▶ <a href="https://sora3141.github.io/Half-Cut/">いますぐ遊ぶ — sora3141.github.io/Half-Cut</a></h3>
+<h3 align="center">▶ <a href="https://t-of.github.io/Half-Cut/">いますぐ遊ぶ — t-of.github.io/Half-Cut</a></h3>
 
 <p align="center">インストール不要・無料。スマホでも PC でも、ブラウザで開くだけで遊べます。</p>
 
@@ -21,9 +21,9 @@
 
 ## 🔗 リンク
 
-- 遊ぶ: https://sora3141.github.io/Half-Cut/
-- ソース: https://github.com/Sora3141/Half-Cut
-- 制作: [T.OF...](https://sora3141.github.io/)
+- 遊ぶ: https://t-of.github.io/Half-Cut/
+- ソース: https://github.com/t-of/Half-Cut
+- 制作: [T.OF...](https://t-of.github.io/)
 
 ## 遊び方
 
@@ -70,7 +70,7 @@
 ES Modules を使っているため、`index.html` を直接開くのではなく、ローカルサーバー経由で開いてください。
 
 ```sh
-git clone https://github.com/Sora3141/Half-Cut.git
+git clone https://github.com/t-of/Half-Cut.git
 cd Half-Cut
 npm start   # → http://localhost:5173
 npm test    # ジオメトリと図形生成のテスト（Node.js 20 以上）
