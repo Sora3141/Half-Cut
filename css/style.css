@@ -74,6 +74,11 @@ body {
   background: var(--bg);
 }
 
+/* スマホのダブルタップ拡大を止める（ピンチは使える） */
+html {
+  touch-action: manipulation;
+}
+
 body {
   margin: 0;
   background: var(--bg);
